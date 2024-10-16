@@ -1,0 +1,12 @@
+*.jar
+*.sat
+*.class
+*.DS_Store
+*.project
+*.zip
+*.html
+*.launch
+*.classpath
+*.bat
+*.sh
+*.prefs
