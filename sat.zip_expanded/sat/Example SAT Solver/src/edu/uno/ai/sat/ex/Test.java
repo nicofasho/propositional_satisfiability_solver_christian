@@ -26,10 +26,10 @@ public class Test {
 	 * test against certain ones.
 	 */
 	private static final Solver[] SOLVERS = new Solver[] {
-		new Cawatso3(),
-		new BruteForceSolver(),
-		new DPLL(),
-		new GSAT(),
+		// new Cawatso3(),
+		// new BruteForceSolver(),
+		// new DPLL(),
+		// new GSAT(),
 		new WalkSAT(),
 	};
 	
