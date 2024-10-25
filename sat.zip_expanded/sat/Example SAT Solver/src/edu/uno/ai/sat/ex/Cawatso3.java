@@ -2,24 +2,23 @@ package edu.uno.ai.sat.ex;
 
 import edu.uno.ai.sat.Clause;
 import edu.uno.ai.sat.Literal;
-
 import edu.uno.ai.sat.Assignment;
 import edu.uno.ai.sat.Solver;
 import edu.uno.ai.sat.Value;
 import edu.uno.ai.sat.Variable;
 import edu.uno.ai.util.ImmutableArray;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * 
- * @author Your Name
+ * SAT Solver using DPLL algorithm with caching.
  */
 public class Cawatso3 extends Solver {
 
+    private Map<String, Boolean> cache = new HashMap<>();
+
     /**
-     * Constructs a new random SAT solver. You should change the string below
-     * from "random" to your ID. You should also change the name of this class.
-     * In Eclipse, you can do that easily by right-clicking on this file
-     * (RandomAgent.java) in the Package Explorer and choosing Refactor > Rename.
+     * Constructs a new SAT solver.
      */
     public Cawatso3() {
         super("cawatso3");
@@ -27,34 +26,10 @@ public class Cawatso3 extends Solver {
 
     @Override
     public boolean solve(Assignment assignment) {
-        // If the problem has no variables, it is trivially true or false.
-        // try {
-        // if (assignment.problem.variables.size() == 0)
-        // return assignment.getValue() == Value.TRUE;
-        // else {
-        // // Keep trying until the assignment is satisfying.
-        // while (assignment.getValue() != Value.TRUE) {
-        // // Choose a variable whose value will be set.
-        // Variable variable = chooseVariable(assignment);
-        // // Choose 'true' or 'false' at random.
-        // Value value;
-        // if (random.nextBoolean())
-        // value = Value.TRUE;
-        // else
-        // value = Value.FALSE;
-        // // Assign the chosen value to the chosen variable.
-        // assignment.setValue(variable, value);
-        // }
-        // // Return success. (Note, if the problem cannot be solved, this
-        // // solver will run until it reaches the operations or time limit.)
-        // return true;
-        // }
-        // } catch (Exception e) {
-        // return false;
-        // }
         try {
             return DPLL_Satisfiable(assignment);
         } catch (Exception e) {
+            e.printStackTrace();
             return false;
         }
     }
@@ -64,72 +39,132 @@ public class Cawatso3 extends Solver {
     }
 
     public boolean DPLL(ImmutableArray<Clause> clauses, ImmutableArray<Variable> symbols, Assignment assignment) {
-        if (assignment.countFalseClauses() == 0) {
+        // Convert the current assignment to a string to use as a cache key
+        String cacheKey = assignment.toString();
+
+        // Check if the result is already in the cache
+        if (cache.containsKey(cacheKey)) {
+            return cache.get(cacheKey);
+        }
+
+        // Base case: if all clauses are satisfied
+        if (assignment.countFalseClauses() == 0 && assignment.countUnknownClauses() == 0) {
+            cache.put(cacheKey, true);
             return true;
         }
 
+        // Base case: if any clause is false
         if (assignment.countFalseClauses() > 0) {
+            cache.put(cacheKey, false);
             return false;
         }
 
+        // Try to find a pure symbol
         Result result = findPureSymbol(symbols, clauses, assignment);
-
         if (result != null) {
             assignment.setValue(result.P, result.value);
-            return DPLL(clauses, symbols, assignment);
+            boolean res = DPLL(clauses, symbols, assignment);
+            cache.put(cacheKey, res);
+            return res;
         }
 
+        // Try to find a unit clause
         result = findUnitClause(clauses, assignment);
-
         if (result != null) {
             assignment.setValue(result.P, result.value);
-            return DPLL(clauses, symbols, assignment);
+            boolean res = DPLL(clauses, symbols, assignment);
+            cache.put(cacheKey, res);
+            return res;
         }
 
-        Variable P = symbols.get(0);
-        ImmutableArray<Variable> rest = createSubArray(symbols);
-
-        Assignment assignmentA = assignment.clone();
-        assignmentA.setValue(P, Value.TRUE);
-
-        Assignment assignmentB = assignment.clone();
-        assignmentB.setValue(P, Value.FALSE);
-
-        return DPLL(clauses, rest, assignmentA) || DPLL(clauses, rest, assignmentB);
-
-    }
-
-    public ImmutableArray<Variable> createSubArray(ImmutableArray<Variable> symbols) {
-        Variable[] list = new Variable[symbols.size() - 1];
-        for (int i = 1; i < symbols.size(); i++) {
-            list[i - 1] = symbols.get(i);
+        // Splitting step: choose the most promising unassigned variable
+        Variable P = selectMostPromisingVariable(symbols, assignment, clauses);
+        if (P == null) {
+            cache.put(cacheKey, false);
+            return false; // No unassigned variables left, should not happen
         }
-        return new ImmutableArray<Variable>(list);
+
+        // Try assigning TRUE to the chosen variable
+        Assignment assignmentCopy = assignment.clone();
+        assignment.setValue(P, Value.TRUE);
+        if (DPLL(clauses, symbols, assignment)) {
+            cache.put(cacheKey, true);
+            return true;
+        }
+
+        // Try assigning FALSE to the chosen variable
+        assignmentCopy.setValue(P, Value.FALSE);
+        boolean res = DPLL(clauses, symbols, assignmentCopy);
+        cache.put(cacheKey, res);
+        return res;
     }
 
-    public Result findPureSymbol(ImmutableArray<Variable> symbols, ImmutableArray<Clause> clauses, Assignment assignment) {
+    private Variable selectMostPromisingVariable(ImmutableArray<Variable> symbols, Assignment assignment,
+            ImmutableArray<Clause> clauses) {
+        // Implement a heuristic to select the most promising variable
+        // For simplicity, we'll use the Most Occurrences in Clauses (MOM) heuristic
+        Variable bestVariable = null;
+        int maxOccurrences = -1;
+
+        for (Variable symbol : symbols) {
+            if (assignment.getValue(symbol) == Value.UNKNOWN) {
+                int occurrences = countOccurrences(symbol, clauses);
+                if (occurrences > maxOccurrences) {
+                    maxOccurrences = occurrences;
+                    bestVariable = symbol;
+                }
+            }
+        }
+
+        return bestVariable;
+    }
+
+    private int countOccurrences(Variable symbol, ImmutableArray<Clause> clauses) {
+        int count = 0;
+        for (Clause clause : clauses) {
+            for (Literal literal : clause.literals) {
+                if (literal.variable.equals(symbol)) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    private Variable selectUnassignedVariable(ImmutableArray<Variable> symbols, Assignment assignment) {
         for (Variable P : symbols) {
-            Boolean value = null;
-            boolean found = false;
-            for (Clause clause : clauses) {
-                for (Literal literal : clause.literals) {
-                    if (literal.variable.equals(P)) {
-                        if (value == null) {
-                            value = literal.valence;
-                        } else if (value != literal.valence) {
-                            found = true;
-                            break;
-                        }
+            if (assignment.getValue(P) == Value.UNKNOWN) {
+                return P;
+            }
+        }
+        return null;
+    }
+
+    private Result findPureSymbol(ImmutableArray<Variable> symbols, ImmutableArray<Clause> clauses, Assignment assignment) {
+        Map<Variable, Boolean> pureSymbols = new HashMap<>();
+
+        for (Clause clause : clauses) {
+            if (assignment.getValue(clause) == Value.TRUE) {
+                continue;
+            }
+
+            for (Literal literal : clause.literals) {
+                Value value = assignment.getValue(literal.variable);
+                if (value == Value.UNKNOWN) {
+                    Boolean currentSign = pureSymbols.get(literal.variable);
+                    if (currentSign == null) {
+                        pureSymbols.put(literal.variable, assignment.getValue(clause) == Value.TRUE);
+                    } else if (currentSign != (assignment.getValue(clause) == Value.TRUE)) {
+                        pureSymbols.remove(literal.variable);
                     }
                 }
-                if (found)
-                    break;
-            }
-
-            if (!found && value != null) {
-                return new Result(value ? Value.TRUE : Value.FALSE, P);
             }
         }
+
+        for (Map.Entry<Variable, Boolean> entry : pureSymbols.entrySet()) {
+            return new Result(entry.getValue() ? Value.TRUE : Value.FALSE, entry.getKey());
+        }
+
         return null;
     }
 
@@ -144,19 +179,28 @@ public class Cawatso3 extends Solver {
                 }
             }
             if (unknownCount == 1) {
-                return new Result(isClauseSatisfied(clause) ? Value.TRUE : Value.FALSE, P);
+                return new Result(isClauseSatisfied(P, clause, assignment), P);
             }
         }
         return null;
     }
 
-    public boolean isClauseSatisfied(Clause clause) {
-        for (Literal literal : clause.literals) {
-            if (literal.valence == true) {
-                return true;
-            }
+    public Value isClauseSatisfied(Variable P, Clause clause, Assignment assignment) {
+        Assignment assignmentTrue = assignment.clone();
+        Assignment assignmentFalse = assignment.clone();
+
+        assignmentTrue.setValue(P, Value.TRUE);
+        assignmentFalse.setValue(P, Value.FALSE);
+
+        if (assignmentTrue.getValue(clause) == Value.TRUE) {
+            return Value.TRUE;
         }
-        return false;
+
+        if (assignmentFalse.getValue(clause) == Value.TRUE) {
+            return Value.FALSE;
+        }
+
+        return Value.UNKNOWN;
     }
 
     class Result {
@@ -168,29 +212,4 @@ public class Cawatso3 extends Solver {
             this.P = P;
         }
     }
-
-    /**
-     * Randomly choose a variable from the problem whose value will be set. If
-     * any variables have the value 'unknown,' choose one of those first;
-     * otherwise choose any variable.
-     * 
-     * @param assignment the assignment being worked on
-     * @return a variable, chosen randomly
-     */
-    // private final Variable chooseVariable(Assignment assignment) {
-    // // This list will hold all variables whose current value is 'unknown.'
-    // ArrayList<Variable> unknown = new ArrayList<>();
-    // // Loop through all the variables in the problem and find ones whose
-    // // current value is 'unknown.'
-    // for (Variable variable : assignment.problem.variables)
-    // if (assignment.getValue(variable) == Value.UNKNOWN)
-    // unknown.add(variable);
-    // // If any variables are 'unknown,' choose one of them randomly.
-    // if (unknown.size() > 0)
-    // return unknown.get(random.nextInt(unknown.size()));
-    // // Otherwise, choose any variable from the problem at random.
-    // else
-    // return
-    // assignment.problem.variables.get(random.nextInt(assignment.problem.variables.size()));
-    // }
 }
