@@ -48,9 +48,9 @@ public class Test {
 		// "sat.zip_expanded/sat/benchmarks/cnf_1.sat",
 		// "sat.zip_expanded/sat/benchmarks/cnf_2.sat",
 		// "sat.zip_expanded/sat/benchmarks/cnf_3.sat",
-		// "sat.zip_expanded/sat/benchmarks/graph_coloring_easy_1.sat",
-		// "sat.zip_expanded/sat/benchmarks/graph_coloring_easy_2.sat",
-		// "sat.zip_expanded/sat/benchmarks/graph_coloring_easy_3.sat",
+		"sat.zip_expanded/sat/benchmarks/graph_coloring_easy_1.sat",
+		"sat.zip_expanded/sat/benchmarks/graph_coloring_easy_2.sat",
+		"sat.zip_expanded/sat/benchmarks/graph_coloring_easy_3.sat",
 		// "sat.zip_expanded/sat/benchmarks/graph_coloring_easy_4.sat",
 		// "sat.zip_expanded/sat/benchmarks/graph_coloring_easy_5.sat",
 		// "sat.zip_expanded/sat/benchmarks/graph_coloring_hard_1.sat",
@@ -89,8 +89,8 @@ public class Test {
 		// "sat.zip_expanded/sat/benchmarks/bb_cargo_deliver_3_time_5.sat",
 		// "sat.zip_expanded/sat/benchmarks/bb_cargo_deliver_return_1_time_4.sat",
 		// "sat.zip_expanded/sat/benchmarks/bb_cargo_deliver_return_2_time_4.sat",
-		"sat.zip_expanded/sat/benchmarks/bb_wumpus_easy_wumpus_time_3.sat",
-		"sat.zip_expanded/sat/benchmarks/bb_wumpus_medium_wumpus_time_7.sat",
+		// "sat.zip_expanded/sat/benchmarks/bb_wumpus_easy_wumpus_time_3.sat",
+		// "sat.zip_expanded/sat/benchmarks/bb_wumpus_medium_wumpus_time_7.sat",
 	};
 
 	/**
