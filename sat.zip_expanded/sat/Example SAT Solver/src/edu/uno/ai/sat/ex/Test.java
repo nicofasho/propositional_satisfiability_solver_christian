@@ -26,7 +26,8 @@ public class Test {
 	 * test against certain ones.
 	 */
 	private static final Solver[] SOLVERS = new Solver[] {
-		new Cawatso3(),
+		// new Cawatso3(),
+		new Cawatso4(),
 		// new BruteForceSolver(),
 		// new DPLL(),
 		// new GSAT(),
