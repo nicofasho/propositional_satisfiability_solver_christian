@@ -6,9 +6,12 @@ import edu.uno.ai.sat.Literal;
 import edu.uno.ai.sat.Solver;
 import edu.uno.ai.sat.Value;
 import edu.uno.ai.sat.Variable;
-import java.util.Iterator;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Cawatso3 extends Solver {
+   private final Map<Variable, Integer> variableActivity = new HashMap<>();
+
    public Cawatso3() {
       super("Cawatso3");
    }
@@ -37,8 +40,8 @@ public class Cawatso3 extends Solver {
             return assignAndSolve(assignment, pureLiteral.variable, pureLiteral.valence ? Value.TRUE : Value.FALSE);
          }
 
-         // Select an unassigned variable and try both true and false assignments
-         Variable unassignedVariable = selectUnassignedVariable(assignment);
+         // Select an unassigned variable using a heuristic and try both true and false assignments
+         Variable unassignedVariable = selectHeuristicVariable(assignment);
          if (unassignedVariable != null) {
             return assignAndSolve(assignment, unassignedVariable, Value.TRUE) || assignAndSolve(assignment, unassignedVariable, Value.FALSE);
          }
@@ -100,17 +103,24 @@ public class Cawatso3 extends Solver {
    }
 
    /**
-    * Selects an unassigned variable in the current assignment.
+    * Selects an unassigned variable taking into account variable activity.
+    * More active variables are preferred.
     * @param assignment The current assignment of variables.
     * @return An unassigned variable, or null if all variables are assigned.
     */
-   private Variable selectUnassignedVariable(Assignment assignment) {
+   private Variable selectHeuristicVariable(Assignment assignment) {
+      Variable bestVariable = null;
+      int highestActivity = -1;
       for (Variable variable : assignment.problem.variables) {
          if (assignment.getValue(variable) == Value.UNKNOWN) {
-            return variable;
+            int activity = variableActivity.getOrDefault(variable, 0);
+            if (activity > highestActivity) {
+               highestActivity = activity;
+               bestVariable = variable;
+            }
          }
       }
-      return null;
+      return bestVariable;
    }
 
    /**
@@ -123,11 +133,12 @@ public class Cawatso3 extends Solver {
    private boolean assignAndSolve(Assignment assignment, Variable variable, Value value) {
       Value originalValue = assignment.getValue(variable);
       assignment.setValue(variable, value);
-      if (solve(assignment)) {
-         return true;
-      } else {
+      boolean result = solve(assignment);
+      if (!result) {
          assignment.setValue(variable, originalValue);
-         return false;
+         // Increase the activity of the variable involved in the conflict
+         variableActivity.put(variable, variableActivity.getOrDefault(variable, 0) + 1);
       }
+      return result;
    }
 }
