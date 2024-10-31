@@ -41,7 +41,7 @@ public class Cawatso3 extends Solver {
          }
 
          // Select an unassigned variable using a heuristic and try both true and false assignments
-         Variable unassignedVariable = selectHeuristicVariable(assignment);
+         Variable unassignedVariable = selectActiveVariable(assignment);
          if (unassignedVariable != null) {
             return assignAndSolve(assignment, unassignedVariable, Value.TRUE) || assignAndSolve(assignment, unassignedVariable, Value.FALSE);
          }
@@ -108,7 +108,7 @@ public class Cawatso3 extends Solver {
     * @param assignment The current assignment of variables.
     * @return An unassigned variable, or null if all variables are assigned.
     */
-   private Variable selectHeuristicVariable(Assignment assignment) {
+   private Variable selectActiveVariable(Assignment assignment) {
       Variable bestVariable = null;
       int highestActivity = -1;
       for (Variable variable : assignment.problem.variables) {
